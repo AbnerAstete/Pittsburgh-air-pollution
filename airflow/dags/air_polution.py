@@ -7,6 +7,10 @@ from airflow.operators.python_operator import PythonOperator, BranchPythonOperat
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 
+from helpers import (
+    extract_esdr
+)
+
 default_args_dict = {
     'start_date': airflow.utils.dates.days_ago(0),
     'concurrency': 1,
@@ -31,6 +35,17 @@ start = DummyOperator(
     trigger_rule='all_success',
 )
 
+extract_esdr_data = PythonOperator(
+    task_id='extract_esdr_data',
+    python_callable=extract_esdr,
+    op_kwargs={
+        "url": "https://esdr.cmucreatelab.org/"
+    },
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
+
 end = DummyOperator(
     task_id='end', 
     dag=dag,
@@ -38,4 +53,4 @@ end = DummyOperator(
 )
 
 
-start  >> end
+start  >> extract_esdr_data >> end
