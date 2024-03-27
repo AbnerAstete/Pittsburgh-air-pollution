@@ -8,7 +8,8 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 
 from helpers import (
-    extract_esdr
+    extract_esdr,
+    extract_smell
 )
 
 default_args_dict = {
@@ -46,6 +47,17 @@ extract_esdr_data = PythonOperator(
     trigger_rule='all_success',
 )
 
+extract_smell_data = PythonOperator(
+    task_id='extract_smell_data',
+    python_callable=extract_smell,
+    op_kwargs={
+        "url": "http://api.smellpittsburgh.org/"
+    },
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
+
 end = DummyOperator(
     task_id='end', 
     dag=dag,
@@ -53,4 +65,4 @@ end = DummyOperator(
 )
 
 
-start  >> extract_esdr_data >> end
+start  >> extract_esdr_data >> extract_smell_data >> end

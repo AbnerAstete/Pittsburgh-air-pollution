@@ -2,10 +2,12 @@ import os, pytz
 from datetime import datetime
   
 import pandas as pd
+import numpy as np
 from py2neo import Node, Relationship, Graph, NodeMatcher
 
 BASE_DIR = '/opt/airflow/'
 DATA_DIR = os.path.join(BASE_DIR, 'data')
+
 
 #connection with neo4j
 graph = Graph("bolt://neo:7687")
@@ -14,9 +16,9 @@ neo4j_session = graph.begin()
 def extract_esdr(url):
     start_dt = datetime(2016, 10, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
     end_dt = datetime(2024, 1, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
-    getData(url,start_dt=start_dt, end_dt=end_dt)
+    getData_esdr(url,start_dt=start_dt, end_dt=end_dt)
 
-def getData(url,start_dt=None, end_dt=None):
+def getData_esdr(url,start_dt=None, end_dt=None):
     """
     Get and save smell and ESDR data
 
@@ -114,11 +116,11 @@ def getData(url,start_dt=None, end_dt=None):
     start_time = datetimeToEpochtime(start_dt) / 1000 # ESDR uses seconds
     end_time = datetimeToEpochtime(end_dt) / 1000 # ESDR uses seconds
     df_esdr_array_raw = getEsdrData(url,esdr_source, start_time=start_time, end_time=end_time)
-    #print('EL LARGO ES:'+ str(len(df_esdr_array_raw)))
 
     # Save ESDR data
     for i in range(len(df_esdr_array_raw)):
-            df_esdr_array_raw[i].to_csv(os.path.join(DATA_DIR, esdr_source_names[i] + ".csv"))
+            df_esdr_array_raw[i].to_csv( '/opt/airflow/data/esdr/' + esdr_source_names[i] + ".csv")
+
 
 def datetimeToEpochtime(dt):
     """Convert a datetime object to epoch time"""
@@ -179,3 +181,54 @@ def getEsdrData(url,source, **options):
         data.append(df)
     # Return
     return data
+
+def extract_smell(url):
+    start_dt = datetime(2016, 10, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
+    end_dt = datetime(2024, 1, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
+    df_smell_raw = getSmellReports(url,start_dt=start_dt, end_dt=end_dt)
+    df_smell_raw.to_csv('/opt/airflow/data/smell_report/smell_report.csv')
+    
+def getSmellReports(url,**options):
+    """Get smell reports data from SmellPGH"""
+    print("Get smell reports from V2 API...")
+
+    # Url
+    api_url = url + "api/v2/"
+    api_para = "smell_reports?"
+    if "allegheny_county" in options and options["allegheny_county"] == True:
+        # This is for general dataset usage in the Allegheny County in Pittsburgh
+        api_para += "zipcodes=15006,15007,15014,15015,15017,15018,15020,15024,15025,15028,15030,15031,15032,15034,15035,15037,15044,15045,15046,15047,15049,15051,15056,15064,15065,15071,15075,15076,15082,15084,15086,15088,15090,15091,15095,15096,15101,15102,15104,15106,15108,15110,15112,15116,15120,15122,15123,15126,15127,15129,15131,15132,15133,15134,15135,15136,15137,15139,15140,15142,15143,15144,15145,15146,15147,15148,15201,15202,15203,15204,15205,15206,15207,15208,15209,15210,15211,15212,15213,15214,15215,15216,15217,15218,15219,15220,15221,15222,15223,15224,15225,15226,15227,15228,15229,15230,15231,15232,15233,15234,15235,15236,15237,15238,15239,15240,15241,15242,15243,15244,15250,15251,15252,15253,15254,15255,15257,15258,15259,15260,15261,15262,15264,15265,15267,15268,15270,15272,15274,15275,15276,15277,15278,15279,15281,15282,15283,15286,15289,15290,15295"
+    else:
+        # This is for our smell pgh paper
+        api_para += "zipcodes=15221,15218,15222,15219,15201,15224,15213,15232,15206,15208,15217,15207,15260,15104"
+    if "start_time" in options:
+        api_para += "&start_time=" + str(options["start_time"])
+    if "end_time" in options:
+        api_para += "&end_time=" + str(options["end_time"])
+
+    # Load smell reports
+    df = pd.read_json(api_url + api_para, convert_dates=False)
+
+    # If empty, return None
+    if df.empty:
+        return None
+
+    # Wrangle text
+    df["smell_description"] = df["smell_description"].replace(np.nan, "").map(removeNonAsciiChars)
+    df["feelings_symptoms"] = df["feelings_symptoms"].replace(np.nan, "").map(removeNonAsciiChars)
+    df["additional_comments"] = df["additional_comments"].replace(np.nan, "").map(removeNonAsciiChars)
+
+    # Set index and drop columns
+    df.set_index("observed_at", inplace=True)
+    df.index.names = ["EpochTime"]
+    df.rename(columns={"latitude": "skewed_latitude", "longitude": "skewed_longitude"}, inplace=True)
+    df.drop(["zip_code_id"], axis=1, inplace=True)
+
+    # Return
+    return df
+
+def removeNonAsciiChars(str_in):
+    """Remove all non-ascii characters in the string"""
+    if str_in is None:
+        return ""
+    return str_in.encode("ascii", "ignore").decode()
