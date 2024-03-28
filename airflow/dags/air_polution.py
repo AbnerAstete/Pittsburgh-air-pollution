@@ -21,7 +21,9 @@ from helpers import (
     clean_esdr_43,
     clean_esdr_3506,
     clean_esdr_3508,
-    clean_esdr_5975
+    clean_esdr_5975,
+    clean_smell_report,
+    insert_smell_data_in_neo4j
 )
 
 default_args_dict = {
@@ -166,6 +168,22 @@ clean_esdr_5975_data = PythonOperator(
     trigger_rule='all_success',
 )
 
+clean_smell_report_data = PythonOperator(
+    task_id='clean_smell_report_data',
+    python_callable=clean_smell_report,
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
+
+insert_smell_data_neo4j = PythonOperator(
+    task_id='insert_smell_data_neo4j',
+    python_callable = insert_smell_data_in_neo4j,
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
+
 end = DummyOperator(
     task_id='end', 
     dag=dag,
@@ -173,4 +191,4 @@ end = DummyOperator(
 )
 
 
-start  >> extract_esdr_data >> extract_smell_data >> [clean_esdr_1_data,clean_esdr_3_data,clean_esdr_23_data,clean_esdr_24_data,clean_esdr_26_data,clean_esdr_27_data,clean_esdr_28_data,clean_esdr_29_data,clean_esdr_43_data,clean_esdr_3506_data,clean_esdr_3508_data,clean_esdr_5975_data] >> end
+start  >> extract_esdr_data >> extract_smell_data >> [clean_esdr_1_data,clean_esdr_3_data,clean_esdr_23_data,clean_esdr_24_data,clean_esdr_26_data,clean_esdr_27_data,clean_esdr_28_data,clean_esdr_29_data,clean_esdr_43_data,clean_esdr_3506_data,clean_esdr_3508_data,clean_esdr_5975_data] >> clean_smell_report_data >> insert_smell_data_neo4j >> end
