@@ -191,7 +191,7 @@ def getEsdrData(url,source, **options):
 def extract_smell(url):
     start_dt = datetime(2016, 10, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
     end_dt = datetime(2024, 1, 31, 0, tzinfo=pytz.timezone("US/Eastern"))
-    df_smell_raw = getSmellReports(url,start_dt=start_dt, end_dt=end_dt)
+    df_smell_raw = getSmellReports(url,start_dt=start_dt, end_dt=end_dt,allegheny_county=True)
     df_smell_raw.to_csv( DATA_DIR_SMELL_REPORT_RAW + 'smell_report.csv')
     
 def getSmellReports(url,**options):
@@ -362,25 +362,27 @@ def clean_smell_report():
     info_zipcode = pd.read_json('data/json/esdr_metadata.json')
     smell_report = pd.read_csv(DATA_DIR_SMELL_REPORT_RAW + 'smell_report.csv')
 
-    # Iterar sobre cada fila del DataFrame info_zipcode
+    # Iterate over each row of the info_zipcode DataFrame
     for index, row in info_zipcode.iterrows():
-        # Verificar si el código postal está presente en smell_report
+        # Check if zip code is present in smell_report
         if row['zipcode'] in smell_report['zipcode'].values:
-            # Actualizar el valor de 'name' en smell_report con el valor correspondiente de 'name' en info_zipcode
+            # Update the value of 'name' in smell_report with the corresponding value of 'name' in info_zipcode
             smell_report.loc[smell_report['zipcode'] == row['zipcode'], 'name'] = row['name']
 
-    # Convertir EpochTime a datetime
-    smell_report['DateTime'] = pd.to_datetime(smell_report['EpochTime'], unit='s').dt.strftime('%d-%m-%Y')
+            # Convert EpochTime to datetime
+            smell_report['DateTime'] = pd.to_datetime(smell_report['EpochTime'], unit='s').dt.strftime('%d-%m-%Y')
 
-    # Guardar smell_report como JSON
+    # Save smell_report as JSON # Save smell_report as JSON
     smell_report.to_json(DATA_DIR_SMELL_REPORT + 'smell_report.json', orient='records')
 
 def insert_smell_data_in_neo4j():
     graph.delete_all()
 
-    # Leer los datos como DataFrame
+
+    # Read the data as DataFrame
     smell_report = pd.read_json(DATA_DIR_SMELL_REPORT + 'smell_report.json')
 
+    
     for index, report in smell_report.iterrows():
         date = report['DateTime'].strftime('%d-%m-%Y')  # Formato YYYY-MM-DD
         epoch = str(report['EpochTime'])
@@ -393,23 +395,23 @@ def insert_smell_data_in_neo4j():
         feelings_symptoms = report['feelings_symptoms']
         additional_comments = report['additional_comments']
 
-        # # Crear el nodo "Day"
+        # Create the "Day" node
         date_node = Node("Day", date=date)
         graph.merge(date_node, "Day", "date")
 
-        # # Crear el nodo "Smell"
+        # Create the "Smell" node
         smell_node = Node("Smell", epoch=epoch ,smell_value=smell_value, smell_description=smell_description, feelings_symptoms=feelings_symptoms, additional_comments=additional_comments)
         graph.merge(smell_node, "Smell", "epoch")
         
-        # # Crear la relación entre "Day" y "Smell"
+        # Create the relationship between "Day" and "Smell"
         relation_smell = Relationship(date_node, "REPORTED_ON", smell_node)
         graph.create(relation_smell)
 
-        # Crear el nodo "Zipcode"
+        # Create the "Zipcode" node
         zipcode_node = Node("Zipcode",name_zipcode=name_zipcode, zipcode=zipcode)
         graph.merge(zipcode_node, "Zipcode", "zipcode")
         
-        # # # Crear la relación entre "Smell" y "Zipcode"
+        # Create the relationship between "Smell" and "Zipcode"
         relation_zipcode = Relationship(smell_node, "REPORTED_IN", zipcode_node)
         graph.create(relation_zipcode)
 
