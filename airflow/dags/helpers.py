@@ -433,7 +433,8 @@ def insert_smell_data_in_neo4j():
 
     for index, report in smell_report.iterrows():
         #date = report['date'] 
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         zipcode = report['zipcode']
         lat = report['skewed_latitude']
         lon = report['skewed_longitude']
@@ -447,7 +448,7 @@ def insert_smell_data_in_neo4j():
         # graph.merge(date_node, "Day", "date")
 
         # Create the "Smell" node
-        smell_node = Node("Smell", datetime=datetime ,smell_value=smell_value, smell_description=smell_description, feelings_symptoms=feelings_symptoms, additional_comments=additional_comments, lat=lat, lon=lon)
+        smell_node = Node("Smell", datetime=report_datetime ,smell_value=smell_value, smell_description=smell_description, feelings_symptoms=feelings_symptoms, additional_comments=additional_comments, lat=lat, lon=lon)
         graph.merge(smell_node, "Smell", "datetime")
         # Create the relationship between "Day" and "Smell"
         # relation_smell = Relationship(smell_node, "REPORTED_ON", date_node)
@@ -471,7 +472,8 @@ def insert_esdr_1_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_1.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM25B = report['PM25B_UG_M3.PM25T_UG_M3.PM25_640_UG_M3']
         SO2_PPM = report['SO2_PPM']
         H2S_PPM = report['H2S_PPM']
@@ -480,17 +482,17 @@ def insert_esdr_1_neo4j():
         SONICWS_MPH = report['SONICWS_MPH']
 
         # Create the "PM2_5" node
-        PM2_5_node = Node("PM2_5", value=PM25B, datetime= datetime)
+        PM2_5_node = Node("PM2_5", value=PM25B, datetime= report_datetime)
         graph.create(PM2_5_node)
         # Create the "SO2" node
-        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= datetime)
+        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= report_datetime)
         graph.create(SO2_node)
         # Create the "H2S" node
-        H2S_node = Node("H2S", PPM=H2S_PPM, datetime= datetime)
+        H2S_node = Node("H2S", PPM=H2S_PPM, datetime= report_datetime)
         graph.create(H2S_node)
 
         # Create the "WIND" node
-        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= datetime) 
+        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= report_datetime) 
         graph.create(WIND_node)
 
         
@@ -522,7 +524,8 @@ def insert_esdr_3_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_3.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM10B = report['PM10B_UG_M3.PM10_640_UG_M3'] 
         SO2_PPM = report['SO2_PPM']
         SONICWD_DEG = report['SONICWD_DEG']
@@ -530,13 +533,13 @@ def insert_esdr_3_neo4j():
         SIGTHETA_DEG = report['SIGTHETA_DEG']
 
         # Create the "PM10B" node
-        PM10_node = Node("PM10", value=PM10B, datetime= datetime)
+        PM10_node = Node("PM10", value=PM10B, datetime= report_datetime)
         graph.create(PM10_node)
         # Create the "SO2_PPM" node
-        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= datetime)
+        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= report_datetime)
         graph.create(SO2_node)
         # Create the "WIND" node
-        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= datetime) 
+        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= report_datetime) 
         graph.create(WIND_node)
 
 
@@ -564,16 +567,17 @@ def insert_esdr_23_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_23.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM10 = report['PM10_UG_M3']
         CO = report['CO_PPM.CO_PPB']
 
         # Create the "PM10" node
-        PM10_node = Node("PM10", value=PM10, datetime= datetime)
+        PM10_node = Node("PM10", value=PM10, datetime= report_datetime)
         graph.create(PM10_node)
 
         # Create the "CO" node
-        CO_node = Node("CO", PPM_PPB=CO, datetime= datetime)
+        CO_node = Node("CO", PPM_PPB=CO, datetime= report_datetime)
         graph.create(CO_node)
 
         # Create the relationship between "PM10" and "Sensor"
@@ -597,11 +601,12 @@ def insert_esdr_24_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_24.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM10 = report['PM10_UG_M3']
 
         # Create the "PM10" node
-        PM10_node = Node("PM10", PM10=PM10, datetime= datetime)
+        PM10_node = Node("PM10", PM10=PM10, datetime= report_datetime)
         graph.create(PM10_node)
 
         # Create the relationship between "PM10" and "Sensor"
@@ -622,7 +627,8 @@ def insert_esdr_26_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_26.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM10 = report['PM10B_UG_M3.PM10_640_UG_M3']
         PM25 = report['PM25B_UG_M3.PM25T_UG_M3.PM25_640_UG_M3']
         OZONE_PPM = report['OZONE_PPM']
@@ -631,17 +637,17 @@ def insert_esdr_26_neo4j():
         SIGTHETA_DEG = report['SIGTHETA_DEG']
         
         # Create the "PM10B" node
-        PM10_node = Node("PM10", value=PM10, datetime= datetime)
+        PM10_node = Node("PM10", value=PM10, datetime= report_datetime)
         graph.create(PM10_node)
         # Create the "PM25B" node
-        PM2_5_node = Node("PM2_5", value=PM25, datetime= datetime)
+        PM2_5_node = Node("PM2_5", value=PM25, datetime= report_datetime)
         graph.create(PM2_5_node)
         # Create the "OZONE_PPM" node
-        OZONE_node = Node("OZONE", PPM=OZONE_PPM, datetime= datetime)
+        OZONE_node = Node("OZONE", PPM=OZONE_PPM, datetime= report_datetime)
         graph.create(OZONE_node)
 
         # Create the "WIND" node
-        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= datetime) 
+        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= report_datetime) 
         graph.create(WIND_node)
 
         # Create the relationship between "PM10B" and "Sensor"
@@ -671,21 +677,22 @@ def insert_esdr_27_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_27.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         NO_PPB = report['NO_PPB']
         NOY_PPB = report['NOY_PPB']
         CO_PPB = report['CO_PPB']
         SO2_PPB = report['SO2_PPB']
         
         # Create the "NO_PPB" node
-        NO_node = Node("NO", PPB=NO_PPB, NOY_PPB_value=NOY_PPB, datetime= datetime)
+        NO_node = Node("NO", PPB=NO_PPB, NOY_PPB_value=NOY_PPB, datetime= report_datetime)
         graph.create(NO_node)
 
         # Create the "CO" node
-        CO_node = Node("CO", PPB=CO_PPB, datetime= datetime)
+        CO_node = Node("CO", PPB=CO_PPB, datetime= report_datetime)
         graph.create(CO_node)
         # Create the "SO2" node
-        SO2_node = Node("SO2", PPB=SO2_PPB, datetime= datetime)
+        SO2_node = Node("SO2", PPB=SO2_PPB, datetime= report_datetime)
         graph.create(SO2_node)
 
 
@@ -715,7 +722,8 @@ def insert_esdr_28_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_28.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         H2S_PPM = report['H2S_PPM']
         SO2_PPM = report['SO2_PPM']
         SIGTHETA_DEG = report['SIGTHETA_DEG']
@@ -723,14 +731,14 @@ def insert_esdr_28_neo4j():
         SONICWS_MPH = report['SONICWS_MPH']
 
         # Create the "H2S" node
-        H2S_node = Node("H2S", PPM=H2S_PPM, datetime = datetime)
+        H2S_node = Node("H2S", PPM=H2S_PPM, datetime = report_datetime)
         graph.create(H2S_node)
         # Create the "SO2" node
-        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= datetime)
+        SO2_node = Node("SO2", PPM=SO2_PPM, datetime= report_datetime)
         graph.create(SO2_node)
 
         # Create the "WIND" node
-        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= datetime) 
+        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= report_datetime) 
         graph.create(WIND_node)
 
         # Create the relationship between "H2S" and "Sensor"
@@ -757,16 +765,17 @@ def insert_esdr_29_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_29.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM10 = report['PM10_UG_M3']
         PM25 = report['PM25_UG_M3.PM25T_UG_M3']
 
 
         # Create the "PM10" node
-        PM10_node = Node("PM10", value=PM10, datetime= datetime)
+        PM10_node = Node("PM10", value=PM10, datetime= report_datetime)
         graph.create(PM10_node)
         # Create the "PM25" node
-        PM2_5_node = Node("PM2_5", value=PM25, datetime= datetime)
+        PM2_5_node = Node("PM2_5", value=PM25, datetime= report_datetime)
         graph.create(PM2_5_node)
 
 
@@ -790,7 +799,8 @@ def insert_esdr_43_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_43.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         CO_PPB = report['CO_PPB']
         NO2_PPB = report['NO2_PPB']
         NOX_PPB = report['NOX_PPB']
@@ -801,20 +811,20 @@ def insert_esdr_43_neo4j():
         SONICWS_MPH = report['SONICWS_MPH']
 
         # Create the "CO_PPB" node
-        CO_node = Node("CO", PPB=CO_PPB, datetime= datetime)
+        CO_node = Node("CO", PPB=CO_PPB, datetime= report_datetime)
         graph.create(CO_node)
 
         # Create the "NO2_PPB" node
-        NO_node = Node("NO", NO_PPB=NO_PPB, NO2_PPB=NO2_PPB, NOX_PPB=NOX_PPB, datetime= datetime)
+        NO_node = Node("NO", NO_PPB=NO_PPB, NO2_PPB=NO2_PPB, NOX_PPB=NOX_PPB, datetime= report_datetime)
         graph.create(NO_node)
 
         # Create the "PM25T_UG_M3" node
-        PM2_5_node = Node("PM2_5", value=PM25T_UG_M3, datetime= datetime)
+        PM2_5_node = Node("PM2_5", value=PM25T_UG_M3, datetime= report_datetime)
         graph.create(PM2_5_node)
 
 
         # Create the "WIND" node
-        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= datetime) 
+        WIND_node = Node("WIND", dev_standar_direction=SIGTHETA_DEG, direction=SONICWD_DEG, speed_mph=SONICWS_MPH, datetime= report_datetime) 
         graph.create(WIND_node)
         
         # Create the relationship between "CO_PPB" and "Sensor"
@@ -846,11 +856,12 @@ def insert_esdr_3506_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_3506.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM2_5 = report['PM2_5']
 
         # Create the "PM2_5" node
-        PM2_5_node = Node("PM2_5", value=PM2_5, datetime= datetime)
+        PM2_5_node = Node("PM2_5", value=PM2_5, datetime= report_datetime)
         graph.create(PM2_5_node)
         
         # Create the relationship between "PM2_5" and "Sensor"
@@ -870,11 +881,12 @@ def insert_esdr_3508_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
 
     for index, report in esdr_3508.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM2_5 = report['PM2_5']
 
         # Create the "PM2_5" node
-        PM2_5_node = Node("PM2_5", PM2_5=PM2_5, datetime= datetime)
+        PM2_5_node = Node("PM2_5", PM2_5=PM2_5, datetime= report_datetime)
         graph.create(PM2_5_node)
 
 
@@ -896,11 +908,12 @@ def insert_esdr_5975_neo4j():
     graph.merge(zipcode_node, "Zipcode", "value")
     
     for index, report in esdr_5975.iterrows():
-        datetime = report['datetime']
+        datetime_str = report['datetime']
+        report_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         PM2_5 = report['PM2_5']
 
         # Create the "PM2_5" node
-        PM2_5_node = Node("PM2_5", PM2_5=PM2_5, datetime= datetime)
+        PM2_5_node = Node("PM2_5", PM2_5=PM2_5, datetime= report_datetime)
         graph.create(PM2_5_node)
 
         # Create the relationship between "PM2_5" and "Sensor"
