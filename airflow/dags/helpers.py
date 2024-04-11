@@ -3,6 +3,8 @@ from datetime import datetime
   
 import pandas as pd
 import numpy as np
+import json
+
 from py2neo import Node, Relationship, Graph, NodeMatcher
 
 BASE_DIR = '/opt/airflow/'
@@ -284,7 +286,7 @@ def clean_esdr_1():
     Feed_1_Avalon_ACHD = Feed_1_Avalon_ACHD.rename(columns={'3.feed_1.SO2_PPM': 'SO2_PPM','3.feed_1.H2S_PPM':'H2S_PPM','3.feed_1.SIGTHETA_DEG':'SIGTHETA_DEG','3.feed_1.SONICWD_DEG':'SONICWD_DEG','3.feed_1.SONICWS_MPH':'SONICWS_MPH'})
 
 
-    esdr_1 = pd.merge(Feed_1_Avalon_ACHD_PM25, Feed_1_Avalon_ACHD, on='EpochTime')
+    esdr_1 = pd.merge(Feed_1_Avalon_ACHD_PM25, Feed_1_Avalon_ACHD, on='EpochTime', how='left')
     esdr_1['datetime'] = pd.to_datetime(esdr_1['EpochTime'], unit='s')
     esdr_1['nameZipcode'] = 'Avalon ACHD'
     esdr_1['zipcode'] = 15202
@@ -299,7 +301,7 @@ def clean_esdr_3():
     Feed_3_North_Braddock_ACHD = pd.read_csv(DATA_DIR_ESDR_RAW + 'Feed_3_North_Braddock_ACHD.csv')
     Feed_3_North_Braddock_ACHD = Feed_3_North_Braddock_ACHD.rename(columns={'3.feed_3.SO2_PPM': 'SO2_PPM','3.feed_3.SONICWD_DEG':'SONICWD_DEG','3.feed_3.SONICWS_MPH':'SONICWS_MPH','3.feed_3.SIGTHETA_DEG':'SIGTHETA_DEG'})
 
-    esdr_3 = pd.merge(Feed_3_North_Braddock_ACHD_PM10, Feed_3_North_Braddock_ACHD, on='EpochTime')
+    esdr_3 = pd.merge(Feed_3_North_Braddock_ACHD, Feed_3_North_Braddock_ACHD_PM10, on='EpochTime', how='left')
     esdr_3['datetime'] = pd.to_datetime(esdr_3['EpochTime'], unit='s')
     esdr_3['nameZipcode'] = 'North Braddock ACHD'
     esdr_3['zipcode'] = 15104
@@ -314,7 +316,7 @@ def clean_esdr_23():
     Feed_23_Flag_Plaza_ACHD_PM10 = pd.read_csv(DATA_DIR_ESDR_RAW + 'Feed_23_Flag_Plaza_ACHD_PM10.csv')
     Feed_23_Flag_Plaza_ACHD_PM10 = Feed_23_Flag_Plaza_ACHD_PM10.rename(columns={'3.feed_23.PM10_UG_M3':'PM10_UG_M3'})
 
-    esdr_23 = pd.merge(Feed_23_Flag_Plaza_ACHD_PM10, Feed_23_Flag_Plaza_ACHD_CO, on='EpochTime')
+    esdr_23 = pd.merge(Feed_23_Flag_Plaza_ACHD_PM10, Feed_23_Flag_Plaza_ACHD_CO, on='EpochTime' , how='left')
     esdr_23['datetime'] = pd.to_datetime(esdr_23['EpochTime'], unit='s')
     esdr_23['nameZipcode'] = 'Flag Plaza ACHD'
     esdr_23['zipcode'] = 15219
@@ -341,8 +343,8 @@ def clean_esdr_26():
     Feed_26_Lawrenceville_ACHD = pd.read_csv(DATA_DIR_ESDR_RAW + 'Feed_26_Lawrenceville_ACHD.csv')
     Feed_26_Lawrenceville_ACHD = Feed_26_Lawrenceville_ACHD.rename(columns={'3.feed_26.OZONE_PPM':'OZONE_PPM','3.feed_26.SONICWS_MPH':'SONICWS_MPH','3.feed_26.SONICWD_DEG':'SONICWD_DEG','3.feed_26.SIGTHETA_DEG':'SIGTHETA_DEG'})
 
-    esdr_26 = pd.merge(Feed_26_and_Feed_59665_Lawrenceville_ACHD_PM10, Feed_26_and_Feed_59665_Lawrenceville_ACHD_PM25, on='EpochTime')
-    esdr_26 = pd.merge(esdr_26, Feed_26_Lawrenceville_ACHD, on='EpochTime')
+    esdr_26 = pd.merge(Feed_26_Lawrenceville_ACHD , Feed_26_and_Feed_59665_Lawrenceville_ACHD_PM25, on='EpochTime' , how='left')
+    esdr_26 = pd.merge(esdr_26, Feed_26_and_Feed_59665_Lawrenceville_ACHD_PM10, on='EpochTime', how='left')
     esdr_26['datetime'] = pd.to_datetime(esdr_26['EpochTime'], unit='s')
     esdr_26['nameZipcode'] = 'Lawrenceville ACHD'
     esdr_26['zipcode'] = 15201
@@ -375,7 +377,7 @@ def clean_esdr_29():
     Feed_29_Liberty_2_ACHD_PM25 = pd.read_csv(DATA_DIR_ESDR_RAW + 'Feed_29_Liberty_2_ACHD_PM25.csv')
     Feed_29_Liberty_2_ACHD_PM25 = Feed_29_Liberty_2_ACHD_PM25.rename(columns={'3.feed_29.PM25_UG_M3..3.feed_29.PM25T_UG_M3': 'PM25_UG_M3.PM25T_UG_M3'})
 
-    esdr_29 = pd.merge(Feed_29_Liberty_2_ACHD_PM10, Feed_29_Liberty_2_ACHD_PM25, on='EpochTime')
+    esdr_29 = pd.merge(Feed_29_Liberty_2_ACHD_PM10, Feed_29_Liberty_2_ACHD_PM25, on='EpochTime', how='left')
     esdr_29['datetime'] = pd.to_datetime(esdr_29['EpochTime'], unit='s')
     esdr_29['nameZipcode'] = 'Liberty 2 ACHD'
     esdr_29['zipcode'] = 15133
@@ -467,6 +469,31 @@ def insert_smell_data_in_neo4j(df_metrics):
     
     # Save intermediate DataFrame
     df_metrics.to_csv(DATA_DIR_META + 'metrics_neo4j.csv', mode='a', header=False, index=False)
+
+def inster_nearby_zipcodes():
+
+    with open('data/metadata/zipcode_neighbors.json') as f:
+        zipcode_neighbors = json.load(f)
+
+    for zipcode, neighbors in zipcode_neighbors.items():
+        
+        zipcode = int(zipcode)
+        # Create or update the current zipcode node
+        zipcode_node = Node("Zipcode", value=zipcode)
+        graph.merge(zipcode_node, "Zipcode", "value")
+        
+        for direction, neighbor_list in neighbors.items():
+            for neighbor in neighbor_list:
+                if neighbor:
+                    neighbor = int(neighbor)
+                    # Create or update the neighboring zipcode node
+                    neighbor_node = Node("Zipcode", value=neighbor)
+                    graph.merge(neighbor_node, "Zipcode", "value")
+                    
+                    # Create a CLOSE_TO relationship between the current zipcode and its neighbor
+                    relation_close_to = Relationship(zipcode_node, "CLOSE_TO", neighbor_node, direction=direction)
+                    graph.create(relation_close_to)
+
 
 def insert_esdr_1_neo4j(df_metrics):
     global statistics

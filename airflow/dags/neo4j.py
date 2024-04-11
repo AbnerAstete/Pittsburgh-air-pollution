@@ -1,6 +1,8 @@
 import datetime
 import pandas as pd
 
+df_metrics_neo4j = pd.DataFrame(columns=['source', 'nodes', 'edges'])
+
 import airflow
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
