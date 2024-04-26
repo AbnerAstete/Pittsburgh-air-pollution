@@ -8,9 +8,16 @@ from airflow.operators.python_operator import PythonOperator, BranchPythonOperat
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 
-from helpers import (
+
+from helpers.correlation.getData_correlation import (
     extract_esdr,
-    extract_smell,
+    extract_smell
+)
+
+from helpers.correlation.correlation import (
+    correlation_analysis_esdr,
+    correlation_analysis_smell,
+    mergeDataFrames
 )
 
 default_args_dict = {
@@ -22,7 +29,7 @@ default_args_dict = {
 }
 
 dag = airflow.DAG(
-    dag_id='get_data',
+    dag_id='correlation_analysis',
     default_args=default_args_dict,
     catchup=False,
     template_searchpath=['/opt/airflow/dags/']
@@ -59,12 +66,45 @@ extract_smell_data = PythonOperator(
     trigger_rule='all_success',
 )
 
+esdr = PythonOperator(
+    task_id='all_esdr',
+    python_callable=correlation_analysis_esdr,
+    op_kwargs={
+        "path": "data/esdr/"
+    },
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
 
+smell = PythonOperator(
+    task_id='smell',
+    python_callable=correlation_analysis_smell,
+    op_kwargs={
+        "path": "data/correlation_analisys/smell_correlation/smell_report_correlation.csv"
+    },
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+)
+
+merge = PythonOperator(
+    task_id='merge',
+    python_callable=mergeDataFrames,
+    op_kwargs={
+        "esdr_path": "data/correlation_analisys/correlation_esdr.csv",
+        "smell_path": "data/correlation_analisys/correlation_smell.csv"
+    },
+    dag=dag,
+    depends_on_past=False,
+    trigger_rule='all_success',
+
+)
 end = DummyOperator(
     task_id='end', 
     dag=dag,
     trigger_rule='all_done',
 )
 
+start  >> extract_esdr_data >> extract_smell_data >> esdr >> smell >> merge >> end
 
-start  >> extract_esdr_data >> extract_smell_data >> end
