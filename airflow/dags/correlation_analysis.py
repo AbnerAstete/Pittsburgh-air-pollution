@@ -14,7 +14,7 @@ from helpers.correlation.getData_correlation import (
     extract_smell
 )
 
-from helpers.correlation.correlation import (
+from helpers.correlation.mergeData_correlation import (
     correlation_analysis_esdr,
     correlation_analysis_smell,
     mergeDataFrames
