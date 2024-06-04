@@ -13,7 +13,7 @@ AIRFLOW_UID=$(id -u)
 _AIRFLOW_WWW_USER_USERNAME=airflow
 _AIRFLOW_WWW_USER_PASSWORD=airflow
 AIRFLOW_GID=0
-_PIP_ADDITIONAL_REQUIREMENTS= py2neo==2021.2.4 pandas==2.0.3 nltk==3.7
+_PIP_ADDITIONAL_REQUIREMENTS= py2neo==2021.2.4 pandas==2.0.3 nltk==3.7 spacy==3.7.2 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0.tar.gz
 EOF
 "
 fi

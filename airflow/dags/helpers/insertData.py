@@ -5,6 +5,7 @@ import pandas as pd
 import json
 import nltk 
 from nltk.tokenize import word_tokenize
+import spacy
 
 
 from py2neo import Node, Relationship, Graph, NodeMatcher
@@ -22,19 +23,49 @@ neo4j_session = graph.begin()
 def delete_all():
     graph.delete_all()
 
-def find_keywords_odor(description):
-    keywords = ['industrial', 'sulphur','diesel', 'egg', 'burning plastic', 'smoke', 'woodsmoke', 'acrid', 'coke', 'tar', 'smog', 'chemical', 'sewage', 'gas', 'trash', 'coal']
-    found_keywords = []
+# def find_keywords_odor(description):
+#     keywords = ['industrial', 'sulphur','diesel', 'egg', 'burning plastic', 'smoke', 'woodsmoke', 'acrid', 'coke', 'tar', 'smog', 'chemical', 'sewage', 'gas', 'trash', 'coal']
+#     found_keywords = []
 
-    # Tokenizar la descripción
-    tokens = word_tokenize(description.lower())
+#     # Tokenizar la descripción
+#     tokens = word_tokenize(description.lower())
     
-    # Buscar coincidencias con las palabras clave
-    for keyword in keywords:
-        if keyword in tokens:
-            found_keywords.append(keyword)
+#     # Buscar coincidencias con las palabras clave
+#     for keyword in keywords:
+#         if keyword in tokens:
+#             found_keywords.append(keyword)
     
-    return found_keywords
+#     return found_keywords
+
+nlp = spacy.load("en_core_web_sm")
+
+smell_keywords = {'industrial', 'sulfur', 'egg', 'burning', 'smoke', 'woodsmoke', 'acrid', 'coke', 'tar', 'smog', 'chemical', 'sewage', 'gas', 'trash', 'coal', 'diesel'}
+def lemmatize_smells(text):
+    doc = nlp(text.lower())
+    lemmas = []
+    for token in doc:
+        lemma = token.lemma_
+        # Normalizar el término si es 'sulphur'
+        if lemma == 'sulphur':
+            lemma = 'sulfur'
+        lemmas.append(lemma)
+        # Si hay una palabra compuesta que contiene una palabra clave, agregarla
+        if " " in lemma:
+            for word in lemma.split():
+                if word in smell_keywords:
+                    lemmas.append(word)
+    return lemmas
+
+def extract_smells(description):
+    lemmas = lemmatize_smells(description)
+    smell_list = []
+    for lemma in lemmas:
+        if lemma in smell_keywords:
+            smell_list.append(lemma)
+            if len(smell_list) >= 3:
+                break
+    return list(set(smell_list))
+
 
 def find_keywords_symptoms(description):
     keywords = ['headache', 'throat', 'irritat','eye' ,'cough', 'nausea', 'asthma', 'anxiety']
@@ -67,10 +98,18 @@ def insert_smell_data_in_neo4j():
         smell_node = Node("Smell", datetime=report_datetime ,smell_value=smell_value,smell_description=smell_description, feelings_symptoms=feelings_symptoms, additional_comments=additional_comments, lat=lat, lon=lon)
         graph.merge(smell_node, "Smell", "datetime")
 
+        # if pd.notnull(smell_description):
+        #     # Create the "Description" nodes and relationships
+        #     description_keywords = find_keywords_odor(smell_description)
+        #     for keyword in description_keywords:
+        #         odor = Node("Odor", keyword=keyword)
+        #         graph.merge(odor, "Odor", "keyword")
+        #         relation_description = Relationship(smell_node, "HAS_ODOR", odor)
+        #         graph.create(relation_description)
+
         if pd.notnull(smell_description):
-            # Create the "Description" nodes and relationships
-            description_keywords = find_keywords_odor(smell_description)
-            for keyword in description_keywords:
+            smell_keywords = extract_smells(smell_description)
+            for keyword in smell_keywords:
                 odor = Node("Odor", keyword=keyword)
                 graph.merge(odor, "Odor", "keyword")
                 relation_description = Relationship(smell_node, "HAS_ODOR", odor)
